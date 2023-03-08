@@ -1,16 +1,15 @@
 package encrypt
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"login-app/configuration"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
-func EncrytpHash(senha string) string {
+func EncrytpHash(senha string, logs configuration.GoAppTools) string {
 	senhaB := []byte(senha)
-	//senhaH := sha256.New().Sum(senhaB)
-	senhaH := sha256.New()
-	senhaH.Write(senhaB)
-	senhaH.Sum(nil)
-	senhaS := hex.EncodeToString(senhaB)
+	senhaH, err := bcrypt.GenerateFromPassword(senhaB, 14)
+	configuration.Check(err, logs)
+	senhaS := string(senhaH)
 	return senhaS
 }

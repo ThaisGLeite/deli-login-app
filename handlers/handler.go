@@ -20,7 +20,7 @@ func GetUser(c *gin.Context, dynamoClient *dynamodb.Client, logs configuration.G
 		c.IndentedJSON(http.StatusNotFound, "Nome de usuário "+userModel.Nome+" não encontrado")
 		return
 	}
-	senhaTemp := encrypt.EncrytpHash(userModel.Senha)
+	senhaTemp := encrypt.EncrytpHash(userModel.Senha, logs)
 	if user.Senha != senhaTemp {
 		logs.InfoLogger.Println(user.Senha)
 		logs.InfoLogger.Println(senhaTemp)
