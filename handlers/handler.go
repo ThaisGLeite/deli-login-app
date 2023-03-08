@@ -11,23 +11,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetUser(c *gin.Context, dynamoClient *dynamodb.Client, logs configuration.GoAppTools) {
+func MarshalUser(c *gin.Context, dynamoClient *dynamodb.Client, logs configuration.GoAppTools) (model.User, model.User) {
 	var userModel model.User
 	err := c.BindJSON(&userModel)
 	configuration.Check(err, logs)
 	user := query.SelectUser(userModel.Nome, userModel.Senha, *dynamoClient, logs)
+	return userModel, user
+}
+
+// this funcion going into AWS, than user and passaword not is hash
+func GetUser(c *gin.Context, dynamoClient *dynamodb.Client, logs configuration.GoAppTools) {
+	userModel, user := MarshalUser(c, dynamoClient, logs)
 	if user.Nome == "" {
 		c.IndentedJSON(http.StatusNotFound, "Nome de usuário "+userModel.Nome+" não encontrado")
 		return
 	}
-	senhaTemp := encrypt.EncrytpHash(userModel.Senha, logs)
-	if user.Senha != senhaTemp {
-		logs.InfoLogger.Println(user.Senha)
-		logs.InfoLogger.Println(senhaTemp)
+	if encrypt.CheckHash(userModel.Senha, user.Senha, logs) {
+		c.IndentedJSON(http.StatusAccepted, "Authorized")
+	} else {
 		c.IndentedJSON(http.StatusUnauthorized, "Senha do usuário "+userModel.Nome+" não confere")
 		return
 	}
-	//ToDO o usuário tem que ficar com a senha sempre do mesmo tamanho e tem que criptografar no inicio, nao no final so
 }
 
 func ResponseOK(c *gin.Context, app configuration.GoAppTools) {

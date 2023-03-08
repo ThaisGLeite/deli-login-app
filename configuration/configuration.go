@@ -14,6 +14,6 @@ type GoAppTools struct {
 
 func Check(erro error, app GoAppTools) {
 	if erro != nil {
-		app.ErrorLogger.Fatal(erro)
+		app.InfoLogger.Println(erro)
 	}
 }
