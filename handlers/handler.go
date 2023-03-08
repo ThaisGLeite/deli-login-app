@@ -42,7 +42,7 @@ func PostUser(c *gin.Context, dynamoClient *dynamodb.Client, logs configuration.
 	//faz a chacagem de errode forma unificada
 	configuration.Check(err, logs)
 	//call the package to encrypt password
-	newUser.Senha = encrypt.EncrytpHash(newUser.Senha)
+	newUser.Senha = encrypt.EncrytpHash(newUser.Senha, logs)
 	//calling the quiry package to mount the request for a DB
 	query.InsertUser(dynamoClient, newUser, logs)
 	name := ("Colaborador " + newUser.Nome + " criado com sucesso!")
