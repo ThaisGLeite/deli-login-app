@@ -42,7 +42,7 @@ func main() {
 		handlers.PostUser(ctx, dynamoClient, logs)
 	})
 
+	logs.InfoLogger.Println("Servidor vai iniciar.")
 	err = appRouter.Run()
 	configuration.Check(err, logs)
-	logs.InfoLogger.Println("Servidor terminou de iniciar.")
 }
