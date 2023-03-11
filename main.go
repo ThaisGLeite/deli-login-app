@@ -5,8 +5,10 @@ import (
 	"login-app/configuration"
 	"login-app/driver"
 	"login-app/handlers"
+	"net/http"
 	"os"
 
+	"github.com/apex/gateway"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +18,34 @@ var (
 	logs         configuration.GoAppTools
 )
 
+func inLambda() bool {
+	if lambdaTaskRoot := os.Getenv("LAMBDA_TASK_ROOT"); lambdaTaskRoot != "" {
+		return true
+	}
+	return false
+}
+
+func setupRouter() *gin.Engine {
+
+	appRouter := gin.New()
+	appRouter.GET("/", func(ctx *gin.Context) {
+		logs.InfoLogger.Println("Servidor Ok")
+		handlers.ResponseOK(ctx, logs)
+	})
+
+	appRouter.POST("/logon", func(ctx *gin.Context) {
+		handlers.GetUser(ctx, dynamoClient, logs)
+	})
+
+	appRouter.POST("/signin", func(ctx *gin.Context) {
+		handlers.PostUser(ctx, dynamoClient, logs)
+	})
+
+	return appRouter
+}
+
+// Para compilar o binario do sistema usamos: GOOS=linux GOARCH=amd64 go build -o login-app .
+// para criar o zip do projeto comando: zip lambda.zip login-app
 func main() {
 	InfoLogger := log.New(os.Stdout, " ", log.LstdFlags|log.Lshortfile)
 	ErrorLogger := log.New(os.Stdout, " ", log.LstdFlags|log.Lshortfile)
@@ -28,21 +58,12 @@ func main() {
 	//chamada da função para revificar o erro retornado
 	configuration.Check(err, logs)
 
-	appRouter := gin.New()
-	appRouter.GET("/", func(ctx *gin.Context) {
-		logs.InfoLogger.Println("Servidor Ok")
-		handlers.ResponseOK(ctx, logs)
-	})
+	if inLambda() {
 
-	appRouter.GET("/logon", func(ctx *gin.Context) {
-		handlers.GetUser(ctx, dynamoClient, logs)
-	})
+		log.Fatal(gateway.ListenAndServe(":8080", setupRouter()))
+	} else {
 
-	appRouter.POST("/signin", func(ctx *gin.Context) {
-		handlers.PostUser(ctx, dynamoClient, logs)
-	})
+		log.Fatal(http.ListenAndServe(":8080", setupRouter()))
+	}
 
-	logs.InfoLogger.Println("Servidor vai iniciar.")
-	err = appRouter.Run()
-	configuration.Check(err, logs)
 }
